@@ -4,12 +4,10 @@ import numpy as np
 np.random.seed(123)
 
 import tensorflow as tf
-keras = tf.keras.layers #this is to avoid a bug in the current version of tensorflow
-from keras import LSTM, Flatten, Dense
-keras = tf.keras.models
-from keras import Sequential
-keras = tf.keras.backend
-import keras as K
+from tensorflow.keras.layers import LSTM, Flatten, Dense
+from tensorflow.keras.models import Sequential
+import tensorflow.keras.backend as K
+from tensorflow.keras.regularizers import l2
 
 import pandas as pd
 
@@ -27,10 +25,10 @@ class Model:
         returns: a Deep Neural Network model
         '''
         model = Sequential([
-            LSTM(64, input_shape=input_shape),
-            Flatten(),
-            Dense(outputs, activation='softmax')
-        ])
+        LSTM(64, input_shape=input_shape, kernel_regularizer=l2(0.001)),
+        Flatten(),
+        Dense(outputs, activation='softmax', kernel_regularizer=l2(0.001))
+    ])
 
         def sharpe_loss(_, y_pred):
             # make all time-series start at 1
@@ -41,7 +39,7 @@ class Model:
             
             portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / portfolio_values[:-1]  # % change formula
 
-            sharpe = K.mean(portfolio_returns) / K.std(portfolio_returns)
+            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns) + 1e-6)
             
             # since we want to maximize Sharpe, while gradient descent minimizes the loss, 
             #   we can negate Sharpe (the min of a negated function is its max)
