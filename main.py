@@ -281,7 +281,7 @@ def main():
         'start_date': '2015-10-01',
         'end_date': '2016-10-01',
         'initial_capital': 100000,
-        'window_size': 51  # Match QuantConnect's default window size
+        'window_size': 100  # Match QuantConnect's default window size
     }
     
     # Set up logging with more detail
