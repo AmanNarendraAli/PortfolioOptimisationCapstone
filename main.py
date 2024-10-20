@@ -133,7 +133,7 @@ class BacktestEngine:
         
         # Initialize portfolio with tickers
         self.portfolio.initialize_tickers(config['tickers'])
-        
+        self.training_data = []
         # Setup logging
         logging.basicConfig(level=logging.INFO,
                           format='%(asctime)s - %(levelname)s - %(message)s')
@@ -207,21 +207,26 @@ class BacktestEngine:
             # Get current window of data
             data = self.market_data.rolling_window
             
-            # Get model allocations
-            allocations = self.model.get_allocations(data)
+            if isinstance(data, list):
+                data = pd.DataFrame(data)  # Convert list to DataFrame if necessary
             
-            # Get current prices
-            current_prices = data.iloc[-1]
-            
-            # Execute rebalance
-            self.portfolio.rebalance_portfolio(allocations, current_prices, self.current_date)
-            
-            logging.info(f"Rebalance executed on {self.current_date}")
-            logging.info(f"New allocations: {dict(zip(self.config['tickers'], allocations))}")
+            # Ensure rolling window is in the correct format (should be a Pandas DataFrame)
+            if isinstance(data, pd.DataFrame):
+                # Get model allocations
+                allocations = self.model.get_allocations(data)
+                
+                # Get current prices
+                current_prices = data.iloc[-1]
+                
+                # Execute rebalance
+                self.portfolio.rebalance_portfolio(allocations, current_prices, self.current_date)
+                
+                logging.info(f"Rebalance executed on {self.current_date}")
+                logging.info(f"New allocations: {dict(zip(self.config['tickers'], allocations))}")
+            else:
+                raise ValueError("Rolling window is not a Pandas DataFrame.")
         except Exception as e:
             logging.error(f"Error during rebalancing: {e}")
-
-
 
     def generate_reports(self):
         """Generate backtest reports with improved error handling"""

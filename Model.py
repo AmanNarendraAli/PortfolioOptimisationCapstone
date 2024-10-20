@@ -30,19 +30,21 @@ class Model:
         Dense(outputs, activation='softmax', kernel_regularizer=l2(0.001))
     ])
         def sharpe_loss(_, y_pred):
-            # make all time-series start at 1
-            data = tf.divide(self.data, self.data[0])  
+            # Normalize time-series (make all time-series start at 1)
+            data = tf.divide(self.data, self.data[0])  # data[0] is the first price point (normalized)
             
-            # value of the portfolio after allocations applied
-            portfolio_values = tf.reduce_sum(tf.multiply(data, y_pred), axis=1) 
+            # Value of the portfolio after allocations are applied
+            portfolio_values = tf.reduce_sum(tf.multiply(data, y_pred), axis=1)
             
-            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / portfolio_values[:-1]  # % change formula
-
+            # Calculate portfolio returns (avoid dividing by zero)
+            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / (portfolio_values[:-1] + 1e-6)
+            
+            # Calculate Sharpe ratio (mean returns / standard deviation, avoid division by zero)
             sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns) + 1e-6)
             
-            # since we want to maximize Sharpe, while gradient descent minimizes the loss, 
-            #   we can negate Sharpe (the min of a negated function is its max)
+            # Negate because we want to maximize Sharpe (minimizing the negative)
             return -sharpe
+
         
         model.compile(loss=sharpe_loss, optimizer='adam')
         return model
