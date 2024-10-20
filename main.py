@@ -226,8 +226,11 @@ class BacktestEngine:
     def generate_reports(self):
         """Generate backtest reports with improved error handling"""
         try:
+            # Get the portfolio stats (e.g., total return, Sharpe ratio)
             stats = self.portfolio.get_portfolio_stats()
-            trades_df = pd.DataFrame(self.transaction_history) if self.portfolio.transaction_history else pd.DataFrame()
+            
+            # Access the transaction history from the portfolio manager
+            trades_df = pd.DataFrame(self.portfolio.transaction_history) if self.portfolio.transaction_history else pd.DataFrame()
             
             # Create visualizations
             fig_assets = self._plot_asset_prices()
