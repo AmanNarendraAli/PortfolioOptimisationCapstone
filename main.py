@@ -203,76 +203,23 @@ class BacktestEngine:
         return fig
     
     def _execute_rebalance(self):
-        """Execute rebalancing logic with necessary checks and improvements"""
         try:
             # Get current window of data
             data = self.market_data.rolling_window
             
-            # Check if data is valid
-            if data is None or len(data) < self.config['window_size']:
-                logging.warning(f"Insufficient data points: {len(data) if data is not None else 0}")
-                return
-                
-            # Calculate returns (excluding the first row which will be NaN)
-            returns = data.pct_change().dropna()  # Drop any NaNs
-            logging.info(f"Returns data cleaned. Shape: {returns.shape}")
-            
-            # Log returns for debugging purposes
-            logging.info(f"Returns before combining:\n{returns}")
-            if returns.isna().any().any():
-                logging.error("NaN detected in returns.")
-                return
-            if np.isinf(returns.values).any():
-                logging.error("Infinity detected in returns.")
-                return
-            
-            # Get prices (excluding the first row to match returns)
-            prices = data.iloc[1:]  # Align prices with returns
-            
-            # Concatenate prices and returns horizontally
-            combined_data = pd.concat([prices, returns], axis=1)
-
-            # Log combined data to verify correctness
-            logging.info(f"Combined data being fed to model:\n{combined_data.head()}")
-            
             # Get model allocations
-            allocations = self.model.get_allocations(combined_data)
-            logging.info(f"Allocations from model: {allocations}")
+            allocations = self.model.get_allocations(data)
             
-            # Check for NaNs in allocations
-            if np.any(np.isnan(allocations)):
-                logging.error(f"NaN allocations detected: {allocations}")
-                return
-            
-            # Normalize allocations if they don't sum to 1 (with additional safeguards)
-            allocation_sum = sum(allocations)
-            if abs(allocation_sum - 1) > 0.01:
-                if allocation_sum > 1e-6:
-                    logging.warning(f"Allocations sum to {allocation_sum}, normalizing")
-                    allocations = allocations / allocation_sum
-                else:
-                    logging.error(f"Allocations sum too small to normalize: {allocation_sum}. Returning zeros.")
-                    allocations = np.zeros_like(allocations)  # Return zeros if normalization isn't possible
-            
-            # Get current prices for rebalancing
+            # Get current prices
             current_prices = data.iloc[-1]
-
-            # Check if current_prices are valid
-            if current_prices.isna().any():
-                logging.error("NaN detected in current_prices.")
-                return
             
             # Execute rebalance
-            logging.info(f"Executing rebalance on {self.current_date} with allocations: {allocations}")
             self.portfolio.rebalance_portfolio(allocations, current_prices, self.current_date)
             
             logging.info(f"Rebalance executed on {self.current_date}")
             logging.info(f"New allocations: {dict(zip(self.config['tickers'], allocations))}")
-            logging.info(f"Current portfolio value: ${self.portfolio.calculate_portfolio_value(current_prices):,.2f}")
-            
         except Exception as e:
-            logging.error(f"Error during rebalancing: {str(e)}")
-            raise
+            logging.error(f"Error during rebalancing: {e}")
 
 
 

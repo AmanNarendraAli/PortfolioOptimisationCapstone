@@ -29,8 +29,6 @@ class Model:
         Flatten(),
         Dense(outputs, activation='softmax', kernel_regularizer=l2(0.001))
     ])
-    # Use Adam optimizer with gradient clipping
-        optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5, clipvalue=1.0)
         def sharpe_loss(_, y_pred):
             # make all time-series start at 1
             data = tf.divide(self.data, self.data[0])  
@@ -46,7 +44,7 @@ class Model:
             #   we can negate Sharpe (the min of a negated function is its max)
             return -sharpe
         
-        model.compile(loss=sharpe_loss, optimizer=optimizer)
+        model.compile(loss=sharpe_loss, optimizer='adam')
         return model
     
     def get_allocations(self, data: pd.DataFrame):
