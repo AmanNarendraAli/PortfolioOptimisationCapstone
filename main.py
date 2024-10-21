@@ -31,6 +31,7 @@ class MarketDataHandler:
         
         self.data = pd.concat(data_frames, axis=1)
         self.data.fillna(method='ffill', inplace=True)
+        self.data = self.data.iloc[::-1]
         return self.data
     
     def update_rolling_window(self, current_date):
