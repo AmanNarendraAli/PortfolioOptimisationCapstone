@@ -25,9 +25,9 @@ class Model:
         returns: a Deep Neural Network model
         '''
         model = Sequential([
-        LSTM(64, input_shape=input_shape, kernel_regularizer=l2(0.001)),
+        LSTM(64, input_shape=input_shape),
         Flatten(),
-        Dense(outputs, activation='softmax', kernel_regularizer=l2(0.001))
+        Dense(outputs, activation='softmax')
     ])
         def sharpe_loss(_, y_pred):
             # Normalize time-series (make all time-series start at 1)
@@ -37,10 +37,10 @@ class Model:
             portfolio_values = tf.reduce_sum(tf.multiply(data, y_pred), axis=1)
             
             # Calculate portfolio returns (avoid dividing by zero)
-            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / (portfolio_values[:-1] + 1e-6)
+            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / (portfolio_values[:-1])
             
             # Calculate Sharpe ratio (mean returns / standard deviation, avoid division by zero)
-            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns) + 1e-6)
+            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns))
             
             # Negate because we want to maximize Sharpe (minimizing the negative)
             return -sharpe

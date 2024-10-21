@@ -85,7 +85,7 @@ class PortfolioManager:
                 continue
             
             # Execute trade if significant
-            if abs(shares_to_trade) > 1e-6:
+            if abs(shares_to_trade) > 1e-10:
                 self.positions[ticker] += shares_to_trade
                 self.transaction_history.append({
                     'date': date,
@@ -97,9 +97,8 @@ class PortfolioManager:
                 })
 
     def calculate_portfolio_value(self, current_prices):
-        """Calculates current portfolio value"""
-        return sum(shares * current_prices[ticker] 
-                  for ticker, shares in self.positions.items())
+        return sum(self.positions[ticker] * current_prices[ticker] for ticker in self.positions)
+
     
     def get_portfolio_stats(self):
         """Calculate portfolio performance statistics"""
@@ -151,9 +150,12 @@ class BacktestEngine:
             # Update rolling window
             if self.market_data.update_rolling_window(self.current_date):
                 # Check if it's time to rebalance (weekly)
-                if self.current_date.weekday() == 0:  # Monday
+                #if self.current_date.weekday() == 0:  # Monday
+                    #self._execute_rebalance()
+                # Change weekly rebalancing to monthly
+                if self.current_date.day == 1:  # First day of the month
                     self._execute_rebalance()
-            
+
             self.current_date += timedelta(days=1)
         
         return self.portfolio.get_portfolio_stats()
@@ -280,9 +282,9 @@ def main():
     config = {
         'tickers': ['VTI', 'AGG', 'DBC', 'VIXY'],
         'start_date': '2015-10-01',
-        'end_date': '2016-10-01',
+        'end_date': '2020-10-01',
         'initial_capital': 100000,
-        'window_size': 100  # Match QuantConnect's default window size
+        'window_size': 51  # Match QuantConnect's default window size
     }
     
     # Set up logging with more detail
