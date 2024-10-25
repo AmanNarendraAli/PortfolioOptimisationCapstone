@@ -24,7 +24,6 @@ class MarketDataHandler:
         data_frames = []
         for ticker in self.tickers:
             try:
-                # Explicitly request adjusted close prices
                 ticker_data = yf.download(ticker, start=start_date, end=end_date)
                 data_frames.append(ticker_data["Adj Close"].rename(ticker))
             except Exception as e:
@@ -33,17 +32,27 @@ class MarketDataHandler:
 
         self.data = pd.concat(data_frames, axis=1)
         self.data.fillna(method="ffill", inplace=True)
+        self.data.dropna(inplace=True)  # Make sure no missing data remains
+
         self.data = self.data.iloc[::-1]
+        # Ensure index is timezone-naive
+        self.data.index = self.data.index.tz_localize(None)
         return self.data
 
     def update_rolling_window(self, current_date):
         """Updates rolling window of data up to current_date"""
-        mask = self.data.index <= current_date
-        recent_data = self.data[mask].tail(self.window_size)
-        if len(recent_data) == self.window_size:
-            self.rolling_window = recent_data
-            return True
-        return False
+        try:
+            # Get data up to and including current_date
+            mask = self.data.index <= current_date
+            recent_data = self.data[mask].tail(self.window_size)
+            
+            if len(recent_data) == self.window_size:
+                self.rolling_window = recent_data
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error in update_rolling_window: {e}")
+            return False
 
 
 class PortfolioManager:
@@ -141,46 +150,69 @@ class BacktestEngine:
         self.market_data = MarketDataHandler(config["tickers"], config["window_size"])
         self.portfolio = PortfolioManager(config["initial_capital"])
         self.model = Model()
-        self.current_date = pd.Timestamp(config["start_date"])
-        self.end_date = pd.Timestamp(config["end_date"])
+        
+        # Get NYSE calendar
+        nyse = mcal.get_calendar("NYSE")
+        self.trading_days = nyse.schedule(
+            start_date=config["start_date"],
+            end_date=config["end_date"]
+        )
+        
+        # Convert to list of dates
+        self.trading_days = pd.to_datetime(self.trading_days.index).tz_localize(None)
+        
+        # Set initial date as first trading day
+        self.current_date = self.trading_days[0]
+        self.end_date = self.trading_days[-1]
 
         # Initialize portfolio with tickers
         self.portfolio.initialize_tickers(config["tickers"])
-        nyse = mcal.get_calendar("NYSE")
-        market_days = nyse.schedule(
-            start_date=config["start_date"], end_date=config["end_date"]
-        )
-        self.trading_days = mcal.date_range(market_days, frequency="1D")
+        
         self.training_data = []
-        # Setup logging
         logging.basicConfig(
-            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+            level=logging.INFO, 
+            format="%(asctime)s - %(levelname)s - %(message)s"
         )
 
     def run_backtest(self):
         """Main backtesting loop"""
-        # Fetch all historical data first
-        self.market_data.fetch_historical_data(
-            self.config["start_date"], self.config["end_date"]
-        )
-
-        while self.current_date <= self.end_date:
-            # Update rolling window
-            self.market_data.update_rolling_window(self.current_date)
-
-            # Update daily portfolio value
-            current_prices = self.market_data.data.loc[self.current_date]
-            self.portfolio.update_daily_portfolio_value(
-                current_prices, self.current_date
+        try:
+            # Fetch all historical data first
+            self.market_data.fetch_historical_data(
+                self.config["start_date"], 
+                self.config["end_date"]
             )
 
-            # Rebalance if necessary
-            if self.current_date.day == 1:
-                self._execute_rebalance()
+            # Iterate through trading days only
+            for trade_date in self.trading_days:
+                self.current_date = trade_date
+                
+                # Update rolling window
+                if self.market_data.update_rolling_window(self.current_date):
+                    # Update daily portfolio value
+                    try:
+                        current_prices = self.market_data.data.loc[self.current_date]
+                        self.portfolio.update_daily_portfolio_value(
+                            current_prices, 
+                            self.current_date
+                        )
 
-            self.current_date += timedelta(days=1)
+                        # Rebalance on first trading day of each month
+                        if trade_date == self.trading_days[0] or (
+                            trade_date.month != self.trading_days[
+                                self.trading_days.get_loc(trade_date) - 1
+                            ].month
+                        ):
+                            self._execute_rebalance()
+                    except KeyError as e:
+                        logging.warning(f"No data available for date {self.current_date}")
+                        continue
 
-        return self.portfolio.get_portfolio_stats()
+            return self.portfolio.get_portfolio_stats()
+            
+        except Exception as e:
+            logging.error(f"Error in run_backtest: {e}")
+            raise
 
     def _plot_asset_prices(self):
         """Plot individual asset prices"""
@@ -233,31 +265,30 @@ class BacktestEngine:
 
     def _execute_rebalance(self):
         try:
-            # Get current window of data
             data = self.market_data.rolling_window
 
-            if isinstance(data, list):
-                data = pd.DataFrame(data)  # Convert list to DataFrame if necessary
+            if data is None or not isinstance(data, pd.DataFrame):
+                logging.warning("No valid rolling window data available for rebalancing")
+                return
 
-            # Ensure rolling window is in the correct format (should be a Pandas DataFrame)
-            if isinstance(data, pd.DataFrame):
-                # Get model allocations
-                allocations = self.model.get_allocations(data)
+            # Get model allocations
+            allocations = self.model.get_allocations(data)
 
-                # Get current prices
-                current_prices = data.iloc[-1]
+            # Get current prices
+            current_prices = data.iloc[-1]
 
-                # Execute rebalance
-                self.portfolio.rebalance_portfolio(
-                    allocations, current_prices, self.current_date
-                )
+            # Execute rebalance
+            self.portfolio.rebalance_portfolio(
+                allocations, 
+                current_prices, 
+                self.current_date
+            )
 
-                logging.info(f"Rebalance executed on {self.current_date}")
-                logging.info(
-                    f"New allocations: {dict(zip(self.config['tickers'], allocations))}"
-                )
-            else:
-                raise ValueError("Rolling window is not a Pandas DataFrame.")
+            logging.info(f"Rebalance executed on {self.current_date}")
+            logging.info(
+                f"New allocations: {dict(zip(self.config['tickers'], allocations))}"
+            )
+            
         except Exception as e:
             logging.error(f"Error during rebalancing: {e}")
 
