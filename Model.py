@@ -37,10 +37,10 @@ class Model:
             portfolio_values = tf.reduce_sum(tf.multiply(data, y_pred), axis=1)
             
             # Calculate portfolio returns (avoid dividing by zero)
-            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / (portfolio_values[:-1])
+            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / tf.maximum(portfolio_values[:-1], 1e-7)
             
             # Calculate Sharpe ratio (mean returns / standard deviation, avoid division by zero)
-            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns))
+            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns) + 1e-7)
             
             # Negate because we want to maximize Sharpe (minimizing the negative)
             return -sharpe
