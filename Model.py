@@ -27,7 +27,7 @@ class Model:
         model = Sequential([
         LSTM(64, input_shape=input_shape),
         Flatten(),
-        Dense(outputs, activation='softmax')
+        Dense(outputs, activation='softmax',kernel_regularizer=l2(0.04))
     ])
         def sharpe_loss(_, y_pred):
             # Normalize time-series (make all time-series start at 1)
@@ -68,5 +68,5 @@ class Model:
             self.model = self.__build_model(data_w_ret.shape, len(data.columns))
         
         fit_predict_data = data_w_ret[np.newaxis,:]        
-        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=100, shuffle=False)
+        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=20, shuffle=False)
         return self.model.predict(fit_predict_data)[0]
