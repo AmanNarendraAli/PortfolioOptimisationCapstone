@@ -8,6 +8,9 @@ from tensorflow.keras.layers import LSTM, Flatten, Dense
 from tensorflow.keras.models import Sequential
 import tensorflow.keras.backend as K
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import Bidirectional, Dropout, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import LearningRateScheduler
 
 import pandas as pd
 
