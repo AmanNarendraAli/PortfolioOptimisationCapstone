@@ -15,7 +15,7 @@ class Model:
     def __init__(self):
         self.data = None
         self.model = None
-        
+    
     def __build_model(self, input_shape, outputs):
         '''
         Builds and returns the Deep Neural Network that will compute the allocation ratios
@@ -25,7 +25,7 @@ class Model:
         returns: a Deep Neural Network model
         '''
         model = Sequential([
-        LSTM(64, input_shape=input_shape),
+        LSTM(128, input_shape=input_shape),
         Flatten(),
         Dense(outputs, activation='softmax',kernel_regularizer=l2(0.04))
     ])
@@ -67,6 +67,6 @@ class Model:
         if self.model is None:
             self.model = self.__build_model(data_w_ret.shape, len(data.columns))
         
-        fit_predict_data = data_w_ret[np.newaxis,:]        
+        fit_predict_data = data_w_ret[np.newaxis, :]      
         self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=20, shuffle=False)
         return self.model.predict(fit_predict_data)[0]
