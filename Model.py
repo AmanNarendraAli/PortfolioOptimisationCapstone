@@ -8,24 +8,14 @@ from tensorflow.keras.layers import LSTM, Flatten, Dense
 from tensorflow.keras.models import Sequential
 import tensorflow.keras.backend as K
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.layers import Bidirectional, Dropout, BatchNormalization
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import LearningRateScheduler
 
 import pandas as pd
-
-def step_decay(epoch):
-    initial_lr = 0.01
-    drop = 0.5
-    epochs_drop = 10.0
-    lr = initial_lr * (drop ** np.floor((1+epoch)/epochs_drop))
-    return lr
 
 class Model:
     def __init__(self):
         self.data = None
         self.model = None
-        
+    
     def __build_model(self, input_shape, outputs):
         '''
         Builds and returns the Deep Neural Network that will compute the allocation ratios
@@ -35,13 +25,9 @@ class Model:
         returns: a Deep Neural Network model
         '''
         model = Sequential([
-        Bidirectional(LSTM(64, return_sequences=True, input_shape=input_shape)),
-        Dropout(0.2),
-        LSTM(32),  # Second LSTM layer
-        Dropout(0.2),
-        BatchNormalization(),
+        LSTM(128, input_shape=input_shape),
         Flatten(),
-        Dense(outputs, activation='softmax', kernel_regularizer=l2(0.04))
+        Dense(outputs, activation='softmax',kernel_regularizer=l2(0.04))
     ])
         def sharpe_loss(_, y_pred):
             # Normalize time-series (make all time-series start at 1)
@@ -59,11 +45,8 @@ class Model:
             # Negate because we want to maximize Sharpe (minimizing the negative)
             return -sharpe
 
-        optimizer = Adam(learning_rate=0.01)
-        model.compile(loss=sharpe_loss, optimizer=optimizer, metrics=['accuracy'])
-
-        optimizer.clipnorm = 1.0
-
+        
+        model.compile(loss=sharpe_loss, optimizer='adam')
         return model
     
     def get_allocations(self, data: pd.DataFrame):
@@ -84,7 +67,6 @@ class Model:
         if self.model is None:
             self.model = self.__build_model(data_w_ret.shape, len(data.columns))
         
-        fit_predict_data = data_w_ret[np.newaxis,:]
-        lrate = LearningRateScheduler(step_decay)     
-        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=20, shuffle=False, callbacks=[lrate])
+        fit_predict_data = data_w_ret[np.newaxis, :]      
+        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=20, shuffle=False)
         return self.model.predict(fit_predict_data)[0]
