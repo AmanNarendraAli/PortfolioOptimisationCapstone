@@ -1,5 +1,9 @@
-.App {
+.app {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
 }
 
 .App-logo {

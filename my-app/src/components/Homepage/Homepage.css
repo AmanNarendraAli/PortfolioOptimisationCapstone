@@ -4,7 +4,7 @@
 .homepage {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 80vh;
     font-family: 'Roboto', 'Poppins', sans-serif;
 }
 
@@ -118,35 +118,6 @@
 
 
 /* Footer */
-.footer {
-    background-color: #007bff; /* Blue background color */
-    color: white;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between; /* Space out left and right sections */
-    align-items: center;
-}
-
-.footer p {
-    margin: 0;
-    font-size: 0.9rem;
-    text-align: left;
-}
-
-.footer-links {
-    display: flex;
-    gap: 1rem;
-}
-
-.footer-links a {
-    color: white;
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-
-.footer-links a:hover {
-    text-decoration: underline;
-}
 
 
 

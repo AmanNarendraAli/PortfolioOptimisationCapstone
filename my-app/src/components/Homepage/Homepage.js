@@ -4,19 +4,6 @@ import RobotImage from "./robot.png";
 function HomePage() {
     return (
         <div className="homepage">
-            {/* Banner/Header */}
-            <header className="banner">
-                <div className="logo-container">
-                    <img src={RobotImage} alt="OptiPortfolio Logo" className="logo" />
-                    <h1>OptiPortfolio</h1>
-                </div>
-                <nav className="nav-links">
-                    <a href="#home">Home</a>
-                    <a href="#about">About</a>
-                    <a href="#contact">Contact</a>
-                </nav>
-            </header>
-
             {/* Main Content Body */}
             <main className="main-content">
                 <section className="intro">
@@ -39,15 +26,6 @@ function HomePage() {
                     </div>
                 </div>
             </main>
-
-            {/* Footer */}
-            <footer className="footer">
-                <p>&copy; 2023 OptiPortfolio. All rights reserved.</p>
-                <div className="footer-links">
-                    <a href="#terms">Terms of Service</a>
-                </div>
-            </footer>
-
         </div>
     );
 }
