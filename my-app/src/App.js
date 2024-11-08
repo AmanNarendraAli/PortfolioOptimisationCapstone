@@ -4,6 +4,7 @@ import "./App.css";
 import HomePage from './components/Homepage/Homepage';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
+import Tickerpage from './components/TickerPage/TickerPage';
 function App(){
   return(
     <Router>
@@ -11,6 +12,7 @@ function App(){
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/configure-bot" element={<Tickerpage />} />
       </Routes>
       <Footer />
       </div>
