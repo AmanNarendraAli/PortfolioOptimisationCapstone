@@ -6,7 +6,9 @@ function Header() {
     return (
         <header className="header">
             <div className="logo-container">
+                <Link to="/">
                 <img src={RobotImage} alt="OptiPortfolio Logo" className="logo" />
+                </Link>
                 <h1>OptiPortfolio</h1>
             </div>
             <nav className="nav-links">

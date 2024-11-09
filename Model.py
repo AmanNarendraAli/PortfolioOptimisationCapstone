@@ -4,7 +4,7 @@ import numpy as np
 np.random.seed(123)
 
 import tensorflow as tf
-from tensorflow.keras.layers import LSTM, Flatten, Dense
+from tensorflow.keras.layers import LSTM, Flatten, Dense, Dropout
 from tensorflow.keras.models import Sequential
 import tensorflow.keras.backend as K
 from tensorflow.keras.regularizers import l2
@@ -25,9 +25,9 @@ class Model:
         returns: a Deep Neural Network model
         '''
         model = Sequential([
-        LSTM(128, input_shape=input_shape),
+        LSTM(64, input_shape=input_shape),
         Flatten(),
-        Dense(outputs, activation='softmax',kernel_regularizer=l2(0.04))
+        Dense(outputs, activation='softmax')
     ])
         def sharpe_loss(_, y_pred):
             # Normalize time-series (make all time-series start at 1)
@@ -50,23 +50,14 @@ class Model:
         return model
     
     def get_allocations(self, data: pd.DataFrame):
-        '''
-        Computes and returns the allocation ratios that optimize the Sharpe over the given data
-        
-        input: data - DataFrame of historical closing prices of various assets
-        
-        return: the allocations ratios for each of the given assets
-        '''
-        
-        # data with returns
-        data_w_ret = np.concatenate([ data.values[1:], data.pct_change().values[1:] ], axis=1)
-        
-        data = data.iloc[1:]
-        self.data = tf.cast(tf.constant(data), float)
-        
+        lookback_days = 50
+        # Extract 50-day window of prices and returns
+        data_w_ret = np.concatenate([data.iloc[-lookback_days:].values, data.pct_change().iloc[-lookback_days:].values], axis=1)
+        self.data = tf.cast(tf.constant(data.iloc[-lookback_days:]), float)
+
         if self.model is None:
             self.model = self.__build_model(data_w_ret.shape, len(data.columns))
-        
+
         fit_predict_data = data_w_ret[np.newaxis, :]      
-        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=20, shuffle=False)
+        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=100, shuffle=False)
         return self.model.predict(fit_predict_data)[0]
