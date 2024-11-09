@@ -31,7 +31,7 @@
     font-size: 1rem;
     border: 1px solid #ddd;
     border-radius: 4px;
-    margin-bottom: 1rem;
+    /* margin-bottom: 1rem; */
 }
 
 .ticker-list {
@@ -41,12 +41,15 @@
     border-radius: 4px;
     padding: 0.5rem;
     background-color: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .ticker-item {
     display: flex;
     align-items: center;
-    margin-bottom: 0.5rem;
+    justify-content: center;
 }
 
 .ticker-item input[type="text"] {
@@ -111,3 +114,4 @@
 .submit-button:hover {
     background-color: #218838;
 }
+
