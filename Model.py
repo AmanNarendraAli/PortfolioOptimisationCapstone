@@ -50,14 +50,23 @@ class Model:
         return model
     
     def get_allocations(self, data: pd.DataFrame):
-        lookback_days = 50
-        # Extract 50-day window of prices and returns
-        data_w_ret = np.concatenate([data.iloc[-lookback_days:].values, data.pct_change().iloc[-lookback_days:].values], axis=1)
-        self.data = tf.cast(tf.constant(data.iloc[-lookback_days:]), float)
-
+        '''
+        Computes and returns the allocation ratios that optimize the Sharpe over the given data
+        
+        input: data - DataFrame of historical closing prices of various assets
+        
+        return: the allocations ratios for each of the given assets
+        '''
+        
+        # data with returns
+        data_w_ret = np.concatenate([ data.values[1:], data.pct_change().values[1:] ], axis=1)
+        
+        data = data.iloc[1:]
+        self.data = tf.cast(tf.constant(data), float)
+        
         if self.model is None:
             self.model = self.__build_model(data_w_ret.shape, len(data.columns))
-
+        
         fit_predict_data = data_w_ret[np.newaxis, :]      
         self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=100, shuffle=False)
         return self.model.predict(fit_predict_data)[0]
