@@ -10,6 +10,7 @@ CORS(app)  # Enable CORS to allow requests from the frontend
 def configure_bot():
     data = request.json
     budget = data.get('budget')
+    volatility = data.get('volatility')
     tickers = data.get('tickers')
 
     # Validate budget and tickers
@@ -38,6 +39,7 @@ def configure_bot():
 
     # Debug output
     print(f"Budget: {budget}")
+    print(f"Target Volatility: {volatility}")
     print(f"Tickers: {tickers}")
     print(f"Start Date: {start_date}")
     print(f"End Date: {end_date}")
@@ -46,6 +48,7 @@ def configure_bot():
     # Return a minimal preview of data for frontend display purposes
     return jsonify({
         "budget": budget,
+        "volatility": volatility,
         "tickers": tickers,
         "start_date": start_date,
         "end_date": end_date,

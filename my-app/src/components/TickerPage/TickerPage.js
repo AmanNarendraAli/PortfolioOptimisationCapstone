@@ -5,6 +5,7 @@ import './TickerPage.css';
 function Tickerpage() {
     const [tickers, setTickers] = useState(['']);
     const [budget, setBudget] = useState('');
+    const [volatility, setVolatility] = useState('');
 
     // Handle adding a new ticker input
     const addTicker = () => {
@@ -64,6 +65,16 @@ function Tickerpage() {
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
             />
+
+            <label htmlFor="volatility">Target Volatility</label>
+            <input
+                type="number"
+                id="volatility"
+                placeholder="Enter your budget"
+                value={volatility}
+                onChange={(e) => setVolatility(e.target.value)}
+            />
+
 
             <label>Tickers</label>
             <div className="ticker-list">
