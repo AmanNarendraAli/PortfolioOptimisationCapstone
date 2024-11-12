@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './TickerPage.css';
 
 function Tickerpage() {
-    const [tickers, setTickers] = useState(['']); // Start with one empty ticker input
+    const [tickers, setTickers] = useState(['']);
     const [budget, setBudget] = useState('');
 
     // Handle adding a new ticker input
     const addTicker = () => {
-        setTickers([...tickers, '']); // Add a new empty ticker input
+        setTickers([...tickers, '']);
     };
 
     // Handle removing a ticker, ensuring there's at least one
@@ -22,6 +23,33 @@ function Tickerpage() {
         const updatedTickers = [...tickers];
         updatedTickers[index] = value;
         setTickers(updatedTickers);
+    };
+
+    // Handle form submission
+    const handleSubmit = async () => {
+        const payload = {
+            budget,
+            tickers: tickers.filter(ticker => ticker) // Remove empty tickers
+        };
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/configure-bot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to submit data');
+            }
+
+            const data = await response.json();
+            console.log('Response from backend:', data);
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
     return (
@@ -63,10 +91,11 @@ function Tickerpage() {
             <button type="button" className="add-ticker" onClick={addTicker}>
                 Add Ticker
             </button>
-
-            <button type="button" className="submit-button">
-                Submit
-            </button>
+            <Link to="/processing"> 
+                <button type="button" className="submit-button" onClick={handleSubmit}>
+                    Submit
+                </button>
+            </Link>   
         </div>
     );
 }
