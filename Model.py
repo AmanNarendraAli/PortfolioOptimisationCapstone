@@ -1,14 +1,8 @@
 import numpy as np
-
-# setting the seed allows for reproducible results
-np.random.seed(123)
-
 import tensorflow as tf
-from tensorflow.keras.layers import LSTM, Flatten, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.models import Sequential
 import tensorflow.keras.backend as K
-from tensorflow.keras.regularizers import l2
-
 import pandas as pd
 
 class Model:
@@ -17,56 +11,59 @@ class Model:
         self.model = None
     
     def __build_model(self, input_shape, outputs):
-        '''
-        Builds and returns the Deep Neural Network that will compute the allocation ratios
-        that optimize the Sharpe Ratio of the portfolio
-        
-        inputs: input_shape - tuple of the input shape, outputs - the number of assets
-        returns: a Deep Neural Network model
-        '''
         model = Sequential([
-        LSTM(64, input_shape=input_shape),
-        Flatten(),
-        Dense(outputs, activation='softmax')
-    ])
-        def sharpe_loss(_, y_pred):
-            # Normalize time-series (make all time-series start at 1)
-            data = tf.divide(self.data, self.data[0])  # data[0] is the first price point (normalized)
-            
-            # Value of the portfolio after allocations are applied
-            portfolio_values = tf.reduce_sum(tf.multiply(data, y_pred), axis=1)
-            
-            # Calculate portfolio returns (avoid dividing by zero)
-            portfolio_returns = (portfolio_values[1:] - portfolio_values[:-1]) / tf.maximum(portfolio_values[:-1], 1e-5)
-            
-            # Calculate Sharpe ratio (mean returns / standard deviation, avoid division by zero)
-            sharpe = K.mean(portfolio_returns) / (K.std(portfolio_returns) + 1e-5)
-            
-            # Negate because we want to maximize Sharpe (minimizing the negative)
+            LSTM(64, input_shape=input_shape),
+            Dense(outputs, activation='softmax')
+        ])
+
+        def sharpe_loss(y_true, y_pred):
+            # y_true: next day's returns, shape (batch_size, num_assets)
+            # y_pred: allocations, shape (batch_size, num_assets)
+
+            # Compute portfolio returns
+            portfolio_returns = tf.reduce_sum(y_pred * y_true, axis=1)
+
+            # Compute Sharpe ratio
+            mean_return = K.mean(portfolio_returns)
+            std_return = K.std(portfolio_returns)
+            sharpe = mean_return / (std_return + 1e-5)
+
+            # Return negative Sharpe to minimize
             return -sharpe
 
-        
         model.compile(loss=sharpe_loss, optimizer='adam')
         return model
-    
+
     def get_allocations(self, data: pd.DataFrame):
-        '''
-        Computes and returns the allocation ratios that optimize the Sharpe over the given data
-        
-        input: data - DataFrame of historical closing prices of various assets
-        
-        return: the allocations ratios for each of the given assets
-        '''
-        
-        # data with returns
-        data_w_ret = np.concatenate([ data.values[1:], data.pct_change().values[1:] ], axis=1)
-        
-        data = data.iloc[1:]
-        self.data = tf.cast(tf.constant(data), float)
-        
+        window_size = 50
+
+        # Combine prices and returns
+        prices = data.values
+        returns = data.pct_change().fillna(0).values
+        combined_data = np.concatenate([prices, returns], axis=1)
+
+        sequences = []
+        next_returns = []
+        for i in range(len(combined_data) - window_size):
+            seq = combined_data[i:i+window_size]
+            sequences.append(seq)
+            # The next day's returns
+            next_return = returns[i+window_size]
+            next_returns.append(next_return)
+        sequences = np.array(sequences)
+        next_returns = np.array(next_returns)
+
         if self.model is None:
-            self.model = self.__build_model(data_w_ret.shape, len(data.columns))
-        
-        fit_predict_data = data_w_ret[np.newaxis, :]      
-        self.model.fit(fit_predict_data, np.zeros((1, len(data.columns))), epochs=100, shuffle=False)
-        return self.model.predict(fit_predict_data)[0]
+            input_shape = (window_size, combined_data.shape[1])
+            self.model = self.__build_model(input_shape, data.shape[1])
+
+        y = next_returns  # Use next day's returns as y_true
+
+        # Train the model
+        self.model.fit(sequences, y, epochs=100, batch_size=64, verbose=1)
+
+        # Predict using the last available sequence
+        last_sequence = combined_data[-window_size:]
+        allocation = self.model.predict(last_sequence[np.newaxis, :])[0]
+        return allocation
+
