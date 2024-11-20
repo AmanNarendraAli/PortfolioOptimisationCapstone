@@ -5,6 +5,9 @@ from tensorflow.keras.models import Sequential
 import tensorflow.keras.backend as K
 import pandas as pd
 
+np.random.seed(123)
+tf.random.set_seed(123)
+
 class Model:
     def __init__(self):
         self.data = None
@@ -13,7 +16,6 @@ class Model:
     def __build_model(self, input_shape, outputs):
         model = Sequential([
             LSTM(64, input_shape=input_shape),
-            Dropout(0.2),
             Dense(outputs, activation='softmax')
         ])
 
@@ -35,7 +37,7 @@ class Model:
         model.compile(loss=sharpe_loss, optimizer='adam')
         return model
 
-    def get_allocations(self, data: pd.DataFrame):
+    def train(self, data: pd.DataFrame):
         window_size = 50
 
         # Calculate daily returns
@@ -66,14 +68,6 @@ class Model:
         early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
         self.model.fit(sequences, y, epochs=100, batch_size=64, verbose=1, callbacks=[early_stop])
 
-        # Predict using the last available sequence
-        last_sequence = combined_data.iloc[-window_size:].values
-        allocation = self.model.predict(last_sequence[np.newaxis, :])[0]
-        
-        # Ensure allocations sum to 1
-        allocation = allocation / np.sum(allocation)
-        return allocation
-    
     def predict_allocation(self, input_sequence):
         # Ensure input_sequence has the correct shape (1, window_size, num_features)
         input_sequence = np.expand_dims(input_sequence, axis=0)
