@@ -8,11 +8,13 @@ import pandas as pd
 np.random.seed(123)
 tf.random.set_seed(123)
 
+# Model.py
+
 class Model:
     def __init__(self):
         self.data = None
         self.model = None
-    
+
     def __build_model(self, input_shape, outputs):
         model = Sequential([
             LSTM(64, input_shape=input_shape),
@@ -20,16 +22,30 @@ class Model:
         ])
 
         def sharpe_loss(y_true, y_pred):
-            # y_true: next day's returns, shape (batch_size, num_assets)
-            # y_pred: allocations, shape (batch_size, num_assets)
+            """
+            Custom loss function to maximize Sharpe Ratio using excess returns.
+
+            Parameters:
+            - y_true: Concatenated tensor of (next_returns, next_rf)
+            - y_pred: Predicted allocations
+
+            Returns:
+            - Negative Sharpe Ratio
+            """
+            # Assuming the last column in y_true is the risk-free rate
+            actual_returns = y_true[:, :-1]
+            rf = y_true[:, -1]
 
             # Compute portfolio returns
-            portfolio_returns = tf.reduce_sum(y_pred * y_true, axis=1)
+            portfolio_returns = tf.reduce_sum(y_pred * actual_returns, axis=1)
+
+            # Compute excess returns
+            excess_returns = portfolio_returns - rf
 
             # Compute Sharpe ratio
-            mean_return = K.mean(portfolio_returns)
+            mean_excess_return = K.mean(excess_returns)
             std_return = K.std(portfolio_returns)
-            sharpe = mean_return / (std_return + 1e-5)
+            sharpe = mean_excess_return / (std_return + 1e-5)
 
             # Return negative Sharpe to minimize
             return -sharpe
@@ -40,33 +56,43 @@ class Model:
     def train(self, data: pd.DataFrame):
         window_size = 50
 
-        # Calculate daily returns
-        returns = data.pct_change().fillna(0)
+        # Exclude 'Risk_Free_Rate_Daily' from assets
+        data_assets = data.drop(columns=['Risk_Free_Rate_Daily'])
 
-        # Combine prices and returns
-        combined_data = pd.concat([data, returns], axis=1)
-        combined_data.columns = [f"{ticker}_price" for ticker in data.columns] + [f"{ticker}_return" for ticker in data.columns]
+        # Calculate daily returns for assets only
+        returns = data_assets.pct_change().fillna(0)
+        # Combine asset prices, returns, and risk-free rates
+        combined_data = pd.concat([data_assets, returns, data['Risk_Free_Rate_Daily']], axis=1)
+        combined_data.columns = [f"{ticker}_price" for ticker in data_assets.columns] + \
+                                [f"{ticker}_return" for ticker in data_assets.columns] + \
+                                ['Risk_Free_Rate_Daily']
 
         sequences = []
         next_returns = []
+        next_rf = []
         for i in range(len(combined_data) - window_size):
             seq = combined_data.iloc[i:i+window_size].values
             sequences.append(seq)
             # The next day's returns
             next_return = returns.iloc[i+window_size].values
+            next_rf_rate = combined_data.iloc[i + window_size]['Risk_Free_Rate_Daily']
             next_returns.append(next_return)
+            next_rf.append(next_rf_rate)
         sequences = np.array(sequences)
         next_returns = np.array(next_returns)
+        next_rf = np.array(next_rf)
 
         if self.model is None:
-            input_shape = (window_size, combined_data.shape[1])
-            self.model = self.__build_model(input_shape, data.shape[1])
+            input_shape = (window_size, combined_data.shape[1])  # Includes Risk_Free_Rate_Daily
+            num_assets = data_assets.shape[1]  # Number of assets excluding Risk_Free_Rate_Daily
+            self.model = self.__build_model(input_shape, num_assets)
 
-        y = next_returns  # Use next day's returns as y_true
+        # Concatenate returns and risk-free rate for y_true
+        y_true = np.hstack((next_returns, next_rf.reshape(-1, 1)))  # Shape: (samples, num_assets + 1)
 
-        # Train the model with early stopping to prevent overfitting
+        # Train the model with early stopping
         early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
-        self.model.fit(sequences, y, epochs=100, batch_size=64, verbose=1, callbacks=[early_stop])
+        self.model.fit(sequences, y_true, epochs=100, batch_size=64, verbose=1, callbacks=[early_stop])
 
     def predict_allocation(self, input_sequence):
         # Ensure input_sequence has the correct shape (1, window_size, num_features)
