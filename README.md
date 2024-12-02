@@ -42,18 +42,9 @@ The goal of this project is to create an optimized portfolio that maximizes risk
 1. **Initialize Portfolio**: Start with a specified cash value.
 2. **Apply Rebalanced Weights**: At the end of each training period, apply optimized weights from the model.
 3. **Compound Returns Daily**: During each holding period, apply fixed weights to each asset’s daily returns, updating the portfolio value based on compounded returns.
-
-This framework enables tracking of cumulative returns and portfolio growth without a separate testing period.
+4. **Rebalance As Needed**: Rebalance at the specified frequency by producing optimised weights based on a past window of data.
 
 ---
-
-## Model Training and Rebalancing
-**Objective**: Optimize portfolio weights at the end of each training period (every two years).
-
-### Steps:
-1. **Initialize Model**: Load the LSTM model with data from the start up to each rebalancing point.
-2. **Train the Model**: At the end of each two-year interval, fit the model to determine optimal weights.
-3. **Save Weights**: Store optimized weights to use during the subsequent holding period until the next rebalancing.
 
 ---
 
