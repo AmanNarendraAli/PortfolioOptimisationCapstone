@@ -7,7 +7,7 @@
   
 # LSTM-Based Portfolio Optimization
 
-This project uses an LSTM model to dynamically optimize asset allocations in a long-only portfolio, rebalancing every two years to adapt to market patterns. The objective is to maximize risk-adjusted returns by leveraging deep learning and financial data.
+This project uses an LSTM model to dynamically optimize asset allocations in a long-only portfolio, retraining every two years to adapt to market patterns. The objective is to maximize risk-adjusted returns by leveraging deep learning and financial data.
 
 ## Table of Contents
 - [Project Objective](#project-objective)
@@ -21,7 +21,7 @@ This project uses an LSTM model to dynamically optimize asset allocations in a l
 ---
 
 ## Project Objective
-The goal of this project is to create an optimized portfolio that maximizes risk-adjusted returns. Using an LSTM model, portfolio weights are adjusted every two years based on cumulative historical data. The project evaluates portfolio performance over time, tracking cumulative returns and comparing results with baseline strategies.
+The goal of this project is to create an optimized portfolio that maximizes risk-adjusted returns. Using an LSTM model, portfolio weights are rebalanced at a specified frequency. The project evaluates portfolio performance over time, tracking cumulative returns and comparing results with baseline strategies.
 
 ---
 
@@ -31,7 +31,7 @@ The goal of this project is to create an optimized portfolio that maximizes risk
 ### Steps:
 1. **Fetch Historical Data**: Retrieve adjusted close prices for selected assets.
 2. **Calculate Daily Returns**: Compute percentage changes in price between consecutive days.
-3. **Normalize Data**: Normalize prices so each asset’s time series starts at 1, ensuring consistency in return calculations.
+3. **Other Preprocessing**: Process and analyse data as needed before utilisation.
 
 ---
 
