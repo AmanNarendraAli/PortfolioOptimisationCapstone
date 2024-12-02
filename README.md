@@ -7,7 +7,7 @@
   
 # LSTM-Based Portfolio Optimization
 
-This project uses an LSTM model to dynamically optimize asset allocations in a long-only portfolio, rebalancing every two years to adapt to market patterns. The objective is to maximize risk-adjusted returns by leveraging deep learning and financial data.
+This project uses an LSTM model to dynamically optimize asset allocations in a long-only portfolio, retraining every two years to adapt to market patterns. The objective is to maximize risk-adjusted returns by leveraging deep learning and financial data.
 
 ## Table of Contents
 - [Project Objective](#project-objective)
@@ -21,7 +21,7 @@ This project uses an LSTM model to dynamically optimize asset allocations in a l
 ---
 
 ## Project Objective
-The goal of this project is to create an optimized portfolio that maximizes risk-adjusted returns. Using an LSTM model, portfolio weights are adjusted every two years based on cumulative historical data. The project evaluates portfolio performance over time, tracking cumulative returns and comparing results with baseline strategies.
+The goal of this project is to create an optimized portfolio that maximizes risk-adjusted returns. Using an LSTM model, portfolio weights are rebalanced at a specified frequency. The project evaluates portfolio performance over time, tracking cumulative returns and comparing results with baseline strategies.
 
 ---
 
@@ -31,7 +31,7 @@ The goal of this project is to create an optimized portfolio that maximizes risk
 ### Steps:
 1. **Fetch Historical Data**: Retrieve adjusted close prices for selected assets.
 2. **Calculate Daily Returns**: Compute percentage changes in price between consecutive days.
-3. **Normalize Data**: Normalize prices so each asset’s time series starts at 1, ensuring consistency in return calculations.
+3. **Other Preprocessing**: Process and analyse data as needed before utilisation.
 
 ---
 
@@ -42,18 +42,9 @@ The goal of this project is to create an optimized portfolio that maximizes risk
 1. **Initialize Portfolio**: Start with a specified cash value.
 2. **Apply Rebalanced Weights**: At the end of each training period, apply optimized weights from the model.
 3. **Compound Returns Daily**: During each holding period, apply fixed weights to each asset’s daily returns, updating the portfolio value based on compounded returns.
-
-This framework enables tracking of cumulative returns and portfolio growth without a separate testing period.
+4. **Rebalance As Needed**: Rebalance at the specified frequency by producing optimised weights based on a past window of data.
 
 ---
-
-## Model Training and Rebalancing
-**Objective**: Optimize portfolio weights at the end of each training period (every two years).
-
-### Steps:
-1. **Initialize Model**: Load the LSTM model with data from the start up to each rebalancing point.
-2. **Train the Model**: At the end of each two-year interval, fit the model to determine optimal weights.
-3. **Save Weights**: Store optimized weights to use during the subsequent holding period until the next rebalancing.
 
 ---
 
