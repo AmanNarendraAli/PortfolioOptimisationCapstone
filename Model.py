@@ -92,7 +92,7 @@ class Model:
 
         # Train the model with early stopping
         early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
-        self.model.fit(sequences, y_true, epochs=100, batch_size=64, verbose=1, callbacks=[early_stop])
+        self.model.fit(sequences, y_true, epochs=100, batch_size=64, verbose=0, callbacks=[early_stop])
 
     def predict_allocation(self, input_sequence):
         # Ensure input_sequence has the correct shape (1, window_size, num_features)
